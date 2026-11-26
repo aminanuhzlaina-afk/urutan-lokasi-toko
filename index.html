@@ -40,9 +40,9 @@ main{max-width:560px;margin:0 auto;padding:14px 14px 40px}
 </style>
 </head>
 <body>
-<header><h1>Kunjungan Solok</h1><p>Rute dari Padang · 10 toko berurutan</p></header>
+<header><h1>Kunjungan Solok</h1><p>10 toko berurutan dari Padang · ketuk untuk buka titik di Maps</p></header>
 <main>
-<a id="go" class="go" href="#">Mulai rute</a>
+<a id="go" class="go" href="#">Buka toko berikutnya</a>
 <p class="sub" id="sub"></p>
 <div id="list"></div>
 <button class="reset" id="reset">Atur ulang tanda kunjungan</button>
@@ -65,35 +65,29 @@ let done=new Set();
 try{done=new Set(JSON.parse(localStorage.getItem(KEY)||'[]'));}catch(e){}
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify([...done]));}catch(e){}};
 const ll=s=>s.lat+','+s.lng;
-function routeUrl(list,fromPadang){
-  const last=list[list.length-1];
-  let u='https://www.google.com/maps/dir/?api=1&travelmode=driving&destination='+ll(last);
-  if(list.length>1)u+='&waypoints='+list.slice(0,-1).map(ll).join('%7C');
-  if(fromPadang)u+='&origin=Padang,+Sumatera+Barat';
-  return u;
-}
+const pinUrl=s=>'https://www.google.com/maps/search/?api=1&query='+ll(s);
 function render(){
   const rem=STORES.filter(s=>!done.has(s.id));
   const go=document.getElementById('go'),sub=document.getElementById('sub');
   if(!rem.length){go.textContent='Semua toko sudah dikunjungi';go.setAttribute('aria-disabled','true');go.removeAttribute('href');sub.textContent='';}
   else{
     go.removeAttribute('aria-disabled');
-    go.href=routeUrl(rem,done.size===0);
-    go.textContent=done.size===0?'Mulai rute dari Padang ('+rem.length+' toko)':'Lanjutkan rute ('+rem.length+' toko tersisa)';
-    sub.textContent=done.size===0?'Satu ketukan membuka Google Maps dengan seluruh urutan toko.':'Rute dimulai dari lokasi Anda sekarang ke toko yang belum dikunjungi.';
+    go.href=pinUrl(rem[0]);
+    go.textContent='Buka toko berikutnya: '+rem[0].n;
+    sub.textContent='Satu ketukan langsung menampilkan titik toko di Google Maps, tanpa rute dari lokasi Anda.';
   }
   const nextId=rem.length?rem[0].id:null, list=document.getElementById('list');
   list.textContent='';
   STORES.forEach((s,i)=>{
     const d=done.has(s.id),c=document.createElement('div');
     c.className='card'+(d?' done':'')+(s.id===nextId?' next':'');
-    c.innerHTML='<div class="no"></div><div class="body"><div class="nm"></div><div class="ow"></div><span class="chip"></span><span class="tag" hidden>Berikutnya</span><div class="row"><a class="nav" target="_self">Navigasi</a><label class="chk"><input type="checkbox"> Sudah dikunjungi</label></div></div>';
+    c.innerHTML='<div class="no"></div><div class="body"><div class="nm"></div><div class="ow"></div><span class="chip"></span><span class="tag" hidden>Berikutnya</span><div class="row"><a class="nav" target="_self">Buka titik di Maps</a><label class="chk"><input type="checkbox"> Sudah dikunjungi</label></div></div>';
     c.querySelector('.no').textContent=i+1;
     c.querySelector('.nm').textContent=s.n;
     c.querySelector('.ow').textContent=s.o||s.id;
     c.querySelector('.chip').textContent=s.a;
     c.querySelector('.tag').hidden=s.id!==nextId;
-    c.querySelector('.nav').href=routeUrl([s],false);
+    c.querySelector('.nav').href=pinUrl(s);
     const cb=c.querySelector('input');cb.checked=d;
     cb.onchange=()=>{cb.checked?done.add(s.id):done.delete(s.id);save();render();};
     list.appendChild(c);
